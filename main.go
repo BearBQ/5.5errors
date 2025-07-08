@@ -12,6 +12,7 @@ func errFunc(i int, intChan chan<- int, wg *sync.WaitGroup, errChan chan<- error
 	if i == 0 {
 
 		errChan <- fmt.Errorf("Вводное число не может быть нулем")
+
 		return
 	}
 
@@ -31,8 +32,7 @@ func main() {
 				fmt.Println("значение: ", num)
 			case <-done:
 				return
-			default:
-				time.After(50 * time.Millisecond)
+
 			}
 
 		}
@@ -41,25 +41,24 @@ func main() {
 	go func() {
 		select {
 		case err := <-errChan:
-
-			errors := append(errors, err)
-
+			errors = append(errors, err)
 		case <-done:
 			return
-		default:
-			time.After(50 * time.Millisecond)
+
 		}
 
 	}()
 
 	var wg sync.WaitGroup
 
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 5; i++ {
 		wg.Add(1)
 		go errFunc(i, intChan, &wg, errChan)
 	}
 
 	wg.Wait()
+
+	time.Sleep(2 * time.Second)
 	for _, err := range errors {
 		fmt.Println(err)
 	}
