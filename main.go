@@ -4,6 +4,7 @@ import (
 	"fmt"
 	_ "fmt"
 	"sync"
+	"time"
 )
 
 func errFunc(i int, intChan chan<- int, wg *sync.WaitGroup, errChan chan<- error) {
@@ -21,19 +22,34 @@ func main() {
 	intChan := make(chan int)
 	errChan := make(chan error)
 	done := make(chan struct{})
+	var errors []error
 
-	go func() {
+	go func() { //выводим результат
 		for {
 			select {
 			case num := <-intChan:
 				fmt.Println("значение: ", num)
-			case err := <-errChan:
-				fmt.Println("Значение ошибки:", err)
 			case <-done:
 				return
+			default:
+				time.After(50 * time.Millisecond)
 			}
 
 		}
+	}()
+
+	go func() {
+		select {
+		case err := <-errChan:
+
+			errors := append(errors, err)
+
+		case <-done:
+			return
+		default:
+			time.After(50 * time.Millisecond)
+		}
+
 	}()
 
 	var wg sync.WaitGroup
@@ -44,5 +60,10 @@ func main() {
 	}
 
 	wg.Wait()
+	for _, err := range errors {
+		fmt.Println(err)
+	}
 	close(done)
+	close(intChan)
+	close(errChan)
 }
